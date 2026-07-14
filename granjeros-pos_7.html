@@ -397,9 +397,6 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 // ══════════════════════════════════════════
 //  FIREBASE
 // ══════════════════════════════════════════
-// Habilitar persistencia offline ANTES de inicializar
-try { firebase.database.enablePersistence = true; } catch(e){}
-
 firebase.initializeApp({
   apiKey:"AIzaSyCjOTg4sgAjKts8NJS7lb4lVYkMLPQdhe4",
   authDomain:"granjeros-pos.firebaseapp.com",
@@ -410,23 +407,8 @@ firebase.initializeApp({
   appId:"1:49639431538:web:872cda644bf6387ad051eb"
 });
 var db = firebase.database();
-
-// ══ MODO OFFLINE ══
-// Activa caché local — los datos quedan guardados en el dispositivo
-// y las ventas se registran aunque no haya internet
-db.ref().keepSynced(true);
-
-db.ref('.info/connected').on('value', function(snap){
-  var el = document.getElementById('conn-status');
-  if(!el) return;
-  if(snap.val()===true){
-    el.textContent='🟢 Conectado';
-    el.style.color='var(--green)';
-  } else {
-    el.textContent='🔴 Sin internet — modo offline';
-    el.style.color='var(--yellow)';
-  }
-});
+// Forzar conexión segura para Chrome
+try { db.ref('.info/serverTimeOffset').get(); } catch(e){}
 
 // ══════════════════════════════════════════
 //  STATE
@@ -453,6 +435,19 @@ function fmt(n){ return '$'+(n||0).toLocaleString('es-AR',{minimumFractionDigits
 //  FIREBASE LISTENERS — definidos DESPUÉS de todas las funciones
 // ══════════════════════════════════════════
 function startListeners(){
+  // Estado de conexión
+  db.ref('.info/connected').on('value', function(snap){
+    var el = document.getElementById('conn-status');
+    if(!el) return;
+    if(snap.val()===true){
+      el.textContent='🟢 Conectado';
+      el.style.color='var(--green)';
+    } else {
+      el.textContent='🔴 Sin internet';
+      el.style.color='var(--yellow)';
+    }
+  });
+
   db.ref('products').on('value', function(snap){
     var val = snap.val() || {};
     products = Object.keys(val).map(function(k){ return Object.assign({},val[k],{fbKey:k}); });
